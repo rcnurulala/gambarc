@@ -4,4 +4,4 @@ tensorflow
 opencv-python-headless
 Pillow
 numpy
-openai
+openai>=1.0.0
