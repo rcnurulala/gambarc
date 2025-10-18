@@ -5,7 +5,7 @@ from tensorflow.keras.preprocessing import image
 from PIL import Image
 import numpy as np
 import pandas as pd
-import openai
+from openai import OpenAI
 
 # ==========================
 # PAGE CONFIG
@@ -17,7 +17,7 @@ st.set_page_config(
 )
 
 # ==========================
-# CUSTOM STYLE (PASTEL THEME)
+# CUSTOM STYLE
 # ==========================
 st.markdown("""
     <style>
@@ -50,13 +50,6 @@ st.markdown("""
     .stProgress > div > div {
         background-color: #8B5CF6 !important;
     }
-    .metric-card {
-        background: #F5F3FF;
-        padding: 1rem;
-        border-radius: 12px;
-        text-align: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -72,9 +65,9 @@ def load_models():
 yolo_model, classifier = load_models()
 
 # ==========================
-# OPENAI CONFIG
+# OPENAI CONFIG (new API)
 # ==========================
-openai.api_key = st.secrets["OPENAI_API_KEY_GAMBARC"]
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY_GAMBARC"])
 
 # ==========================
 # HEADER
@@ -84,40 +77,36 @@ st.markdown("<p style='text-align:center; color:#6B21A8;'>Klasifikasi & Deteksi 
 st.markdown("---")
 
 # ==========================
-# SIDEBAR NAVIGATION
+# SIDEBAR
 # ==========================
 st.sidebar.header("⚙️ Mode Analisis")
 mode = st.sidebar.radio("", ["🎯 Deteksi Objek (YOLO)", "🧠 Klasifikasi Gambar"])
 uploaded_file = st.sidebar.file_uploader("📤 Unggah Gambar", type=["jpg", "jpeg", "png"])
 st.sidebar.markdown("---")
-st.sidebar.caption("💡 Gunakan YOLO untuk deteksi banyak objek atau mode klasifikasi untuk mengenali jenis gambar tunggal.")
+st.sidebar.caption("💡 Gunakan YOLO untuk deteksi banyak objek, atau mode klasifikasi untuk satu jenis gambar.")
 
 # ==========================
-# PIPELINE: INPUT → MODEL → VISUAL → INTERPRETASI
+# PIPELINE
 # ==========================
 if uploaded_file:
     img = Image.open(uploaded_file)
     col1, col2 = st.columns([1, 1], gap="large")
 
-    # ---- INPUT STAGE ----
     with col1:
         st.image(img, caption="📸 Gambar Diupload", use_container_width=True)
 
-    with st.spinner("🤖 Menganalisis gambar menggunakan model AI..."):
-        # ---- MODEL STAGE ----
+    with st.spinner("🤖 Menganalisis gambar..."):
         if mode == "🎯 Deteksi Objek (YOLO)":
             results = yolo_model(img)
             result_img = results[0].plot()
             detected = len(results[0].boxes)
 
-            # ---- VISUALIZATION ----
             with col2:
                 st.image(result_img, caption="🎯 Hasil Deteksi", use_container_width=True)
                 st.markdown(f"### 🟣 Jumlah Objek Terdeteksi: **{detected}**")
 
-            # ---- INTERPRETATION ----
-            prompt = f"Gambar ini dianalisis menggunakan YOLO dan terdeteksi {detected} objek. Jelaskan interpretasi kemungkinan isi gambar tersebut."
-        
+            prompt = f"Gambar ini terdeteksi {detected} objek menggunakan YOLO. Jelaskan kemungkinan isi gambar tersebut secara informatif."
+
         else:
             img_resized = img.resize((224, 224))
             img_array = np.expand_dims(image.img_to_array(img_resized), axis=0) / 255.0
@@ -128,7 +117,6 @@ if uploaded_file:
             confidence = np.max(prediction)
             pred_label = class_names[class_index]
 
-            # ---- VISUALIZATION ----
             with col2:
                 st.markdown(f"### 🏷️ Prediksi: **{pred_label}**")
                 st.progress(float(confidence))
@@ -136,32 +124,35 @@ if uploaded_file:
                 df = pd.DataFrame({'Kelas': class_names, 'Probabilitas': prediction})
                 st.bar_chart(df.set_index('Kelas'))
 
-            # ---- INTERPRETATION ----
-            prompt = f"Model mengklasifikasikan gambar ini sebagai {pred_label} dengan keyakinan {confidence:.2%}. Jelaskan interpretasi hasil ini dengan bahasa sederhana dan konteks umum."
+            prompt = f"Model memprediksi gambar ini sebagai {pred_label} dengan keyakinan {confidence:.2%}. Jelaskan makna hasil ini dengan bahasa sederhana."
 
-    # ---- AI INTERPRETATION PANEL ----
+    # ==========================
+    # INTERPRETASI CHATGPT
+    # ==========================
     st.markdown("---")
     st.subheader("💬 Interpretasi AI Terintegrasi")
     with st.spinner("ChatGPT sedang menafsirkan hasil..."):
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Kamu adalah asisten AI yang menjelaskan hasil analisis gambar dengan cara ramah dan mudah dipahami."},
+                {"role": "system", "content": "Kamu adalah AI yang menjelaskan hasil analisis gambar secara ramah dan mudah dipahami."},
                 {"role": "user", "content": prompt}
             ]
         )
     st.markdown(f"<div style='background:#F5F3FF; padding:1rem; border-radius:10px;'>{response.choices[0].message.content}</div>", unsafe_allow_html=True)
 
-    # ---- USER Q&A ----
+    # ==========================
+    # Q&A CHAT
+    # ==========================
     st.markdown("### 🗨️ Tanya AI tentang hasil ini")
     user_q = st.text_input("Tulis pertanyaanmu:")
     if user_q:
         with st.spinner("ChatGPT sedang menjawab..."):
-            q_response = openai.ChatCompletion.create(
+            q_response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "Kamu adalah asisten AI yang menjawab pertanyaan seputar hasil analisis gambar."},
-                    {"role": "user", "content": f"Hasil model: {prompt}. Pertanyaan pengguna: {user_q}"}
+                    {"role": "system", "content": "Kamu adalah AI yang menjawab pertanyaan tentang hasil analisis gambar."},
+                    {"role": "user", "content": f"Hasil model: {prompt}. Pertanyaan: {user_q}"}
                 ]
             )
         st.markdown(f"**🤖 ChatGPT:** {q_response.choices[0].message.content}")
