@@ -65,7 +65,7 @@ def load_models():
 yolo_model, classifier = load_models()
 
 # ==========================
-# OPENAI CONFIG (new API)
+# OPENAI CONFIG
 # ==========================
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY_GAMBARC"])
 
@@ -99,20 +99,34 @@ if uploaded_file:
         if mode == "🎯 Deteksi Objek (YOLO)":
             results = yolo_model(img)
             result_img = results[0].plot()
-            detected = len(results[0].boxes)
+            boxes = results[0].boxes
+            names = results[0].names
+
+            detected_objects = []
+            for box in boxes:
+                cls = int(box.cls)
+                conf = float(box.conf)
+                label = names[cls]
+                detected_objects.append(f"{label} ({conf*100:.1f}%)")
 
             with col2:
                 st.image(result_img, caption="🎯 Hasil Deteksi", use_container_width=True)
-                st.markdown(f"### 🟣 Jumlah Objek Terdeteksi: **{detected}**")
+                st.markdown(f"### 🟣 Objek Terdeteksi:")
+                for obj in detected_objects:
+                    st.write(f"- {obj}")
 
-            prompt = f"Gambar ini terdeteksi {detected} objek menggunakan YOLO. Jelaskan kemungkinan isi gambar tersebut secara informatif."
+            if detected_objects:
+                detected_text = ", ".join(detected_objects)
+                prompt = f"Model YOLO mendeteksi objek berikut di dalam gambar: {detected_text}. Jelaskan hasil deteksi ini dengan bahasa alami dan ringkas."
+            else:
+                prompt = "Model YOLO tidak mendeteksi objek apapun. Jelaskan kemungkinan penyebabnya secara singkat."
 
         else:
             img_resized = img.resize((224, 224))
             img_array = np.expand_dims(image.img_to_array(img_resized), axis=0) / 255.0
             prediction = classifier.predict(img_array)[0]
 
-            class_names = ['Kucing', 'Anjing', 'Burung']  # ganti sesuai model kamu
+            class_names = ['Kucing', 'Anjing', 'Burung']  # Ganti sesuai model kamu
             class_index = np.argmax(prediction)
             confidence = np.max(prediction)
             pred_label = class_names[class_index]
@@ -124,38 +138,22 @@ if uploaded_file:
                 df = pd.DataFrame({'Kelas': class_names, 'Probabilitas': prediction})
                 st.bar_chart(df.set_index('Kelas'))
 
-            prompt = f"Model memprediksi gambar ini sebagai {pred_label} dengan keyakinan {confidence:.2%}. Jelaskan makna hasil ini dengan bahasa sederhana."
+            prompt = f"Model memprediksi gambar ini sebagai {pred_label} dengan tingkat keyakinan {confidence:.2%}. Jelaskan arti hasil ini dengan cara yang mudah dipahami."
 
     # ==========================
     # INTERPRETASI CHATGPT
     # ==========================
     st.markdown("---")
     st.subheader("💬 Interpretasi AI Terintegrasi")
-    with st.spinner("ChatGPT sedang menafsirkan hasil..."):
+    with st.spinner("🧠 Menghasilkan interpretasi..."):
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Kamu adalah AI yang menjelaskan hasil analisis gambar secara ramah dan mudah dipahami."},
+                {"role": "system", "content": "Kamu adalah AI yang menjelaskan hasil analisis gambar secara alami, informatif, dan mudah dipahami manusia."},
                 {"role": "user", "content": prompt}
             ]
         )
     st.markdown(f"<div style='background:#F5F3FF; padding:1rem; border-radius:10px;'>{response.choices[0].message.content}</div>", unsafe_allow_html=True)
-
-    # ==========================
-    # Q&A CHAT
-    # ==========================
-    st.markdown("### 🗨️ Tanya AI tentang hasil ini")
-    user_q = st.text_input("Tulis pertanyaanmu:")
-    if user_q:
-        with st.spinner("ChatGPT sedang menjawab..."):
-            q_response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "Kamu adalah AI yang menjawab pertanyaan tentang hasil analisis gambar."},
-                    {"role": "user", "content": f"Hasil model: {prompt}. Pertanyaan: {user_q}"}
-                ]
-            )
-        st.markdown(f"**🤖 ChatGPT:** {q_response.choices[0].message.content}")
 
 else:
     st.markdown("### 📥 Silakan unggah gambar di sidebar untuk memulai analisis.")
