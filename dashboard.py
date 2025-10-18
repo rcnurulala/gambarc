@@ -74,7 +74,7 @@ yolo_model, classifier = load_models()
 # ==========================
 # OPENAI CONFIG
 # ==========================
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+openai.api_key = st.secrets["OPEN_AI_GAMBARC"]
 
 # ==========================
 # HEADER
