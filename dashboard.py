@@ -22,13 +22,10 @@ st.set_page_config(
 # ==========================
 st.markdown("""
 <style>
-/* Background gradient */
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #FDE68A, #FBCFE8, #A5B4FC);
     font-family: 'Poppins', sans-serif;
 }
-
-/* Main container */
 .block-container {
     background-color: rgba(255,255,255,0.85);
     border-radius: 18px;
@@ -36,57 +33,29 @@ st.markdown("""
     box-shadow: 0 8px 25px rgba(0,0,0,0.12);
     backdrop-filter: blur(10px);
 }
-
-/* Headers */
-h1, h2, h3 {
-    color: #4C1D95;
-    font-weight: 700;
-}
-
-/* Buttons */
+h1, h2, h3 { color: #4C1D95; font-weight: 700; }
 .stButton>button {
     background: linear-gradient(90deg, #7C3AED, #EC4899);
-    color: white;
-    border-radius: 8px;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    font-weight: 600;
+    color: white; border-radius: 8px; border: none;
+    padding: 0.6rem 1.2rem; font-weight: 600;
     transition: all 0.3s ease;
 }
 .stButton>button:hover {
     transform: scale(1.05);
     box-shadow: 0 0 15px rgba(236,72,153,0.5);
 }
-
-/* Sidebar */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #DDD6FE, #FBCFE8);
     color: #4C1D95;
 }
-[data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-    color: #4C1D95;
-}
-
-/* Progress bar color */
-.stProgress > div > div {
-    background-color: #A78BFA !important;
-}
-
-/* Interpretation box */
+[data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: #4C1D95; }
+.stProgress > div > div { background-color: #A78BFA !important; }
 .interpret-box {
     background-color: #F5F3FF;
     border-left: 5px solid #7C3AED;
-    padding: 1rem;
-    border-radius: 10px;
-    margin-top: 1rem;
+    padding: 1rem; border-radius: 10px; margin-top: 1rem;
 }
-
-/* Image caption */
-.caption {
-    color: #6B7280;
-    font-size: 0.9rem;
-    text-align: center;
-}
+.caption { color: #6B7280; font-size: 0.9rem; text-align: center; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -133,6 +102,9 @@ if uploaded_file:
         st.image(img, caption="📸 Gambar Diupload", use_container_width=True)
 
     with st.spinner("🤖 Menganalisis gambar..."):
+        # ==========================
+        # 🎯 DETEKSI OBJEK (YOLO)
+        # ==========================
         if mode == "🎯 Deteksi Objek (YOLO)":
             results = yolo_model(img)
             result_img = results[0].plot()
@@ -155,16 +127,31 @@ if uploaded_file:
                 else:
                     st.info("Tidak ada objek terdeteksi.")
 
-            prompt = (f"Model YOLO mendeteksi objek berikut di dalam gambar: {', '.join(detected_objects)}."
-                      if detected_objects else
-                      "Model YOLO tidak mendeteksi objek apapun. Jelaskan kemungkinan penyebabnya secara singkat.")
+            prompt = (
+                f"Model YOLO mendeteksi objek berikut di dalam gambar: {', '.join(detected_objects)}."
+                if detected_objects else
+                "Model YOLO tidak mendeteksi objek apapun. Jelaskan kemungkinan penyebabnya secara singkat."
+            )
 
+        # ==========================
+        # 🧠 KLASIFIKASI GAMBAR
+        # ==========================
         else:
             img_resized = img.resize((224, 224))
             img_array = np.expand_dims(image.img_to_array(img_resized), axis=0) / 255.0
-            prediction = classifier.predict(img_array)[0]
+            prediction = classifier.predict(img_array).flatten()
 
-            class_names = ['Kucing', 'Anjing', 'Burung']  # Ubah sesuai model
+            num_classes = classifier.output_shape[-1]
+            class_names = ['Kucing', 'Anjing']  # hanya dua kelas
+
+            # Pengecekan keamanan jumlah kelas
+            if len(class_names) != num_classes:
+                st.warning(
+                    f"⚠️ Model memiliki {num_classes} output, tapi class_names hanya {len(class_names)}. "
+                    "Pastikan model kamu dilatih untuk 2 kelas (Kucing & Anjing)."
+                )
+                class_names = [f"Kelas_{i+1}" for i in range(num_classes)]
+
             class_index = np.argmax(prediction)
             confidence = np.max(prediction)
             pred_label = class_names[class_index]
@@ -173,13 +160,17 @@ if uploaded_file:
                 st.markdown(f"### 🏷️ Prediksi: **{pred_label}**")
                 st.progress(float(confidence))
                 st.caption(f"Confidence: {confidence:.2%}")
-                df = pd.DataFrame({'Kelas': class_names, 'Probabilitas': prediction})
+
+                df = pd.DataFrame({
+                    'Kelas': class_names,
+                    'Probabilitas': prediction
+                })
                 st.bar_chart(df.set_index('Kelas'))
 
             prompt = f"Model memprediksi gambar ini sebagai {pred_label} dengan tingkat keyakinan {confidence:.2%}. Jelaskan hasil ini secara sederhana."
 
     # ==========================
-    # INTERPRETASI CHATGPT
+    # 💬 INTERPRETASI CHATGPT
     # ==========================
     st.markdown("---")
     st.subheader("💬 Interpretasi AI Terintegrasi")
