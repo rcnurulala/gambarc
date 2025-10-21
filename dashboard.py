@@ -79,13 +79,21 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY_GAMBARC"])
 # HEADER
 # ==========================
 st.markdown("<h1 style='text-align:center;'>🪶 AI Vision Studio</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; color:#6B21A8;'>Klasifikasi & Deteksi Objek dengan Sentuhan AI</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:#6B21A8;'>Klasifikasi & Deteksi Objek Kucing 🐱 dan Anjing 🐶</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 # ==========================
 # SIDEBAR
 # ==========================
 st.sidebar.header("⚙️ Mode Analisis")
+
+# 🐾 Tambahkan ilustrasi kucing dan anjing di sidebar
+col_sb1, col_sb2 = st.sidebar.columns(2)
+with col_sb1:
+    st.image("https://cdn-icons-png.flaticon.com/512/616/616408.png", width=80, caption="Kucing 🐱")
+with col_sb2:
+    st.image("https://cdn-icons-png.flaticon.com/512/616/6164082.png", width=80, caption="Anjing 🐶")
+
 mode = st.sidebar.radio("", ["🎯 Deteksi Objek (YOLO)", "🧠 Klasifikasi Gambar"])
 uploaded_file = st.sidebar.file_uploader("📤 Unggah Gambar", type=["jpg", "jpeg", "png"])
 st.sidebar.markdown("---")
@@ -133,7 +141,7 @@ if uploaded_file:
                 "Model YOLO tidak mendeteksi objek apapun. Jelaskan kemungkinan penyebabnya secara singkat."
             )
 
-                # ==========================
+        # ==========================
         # 🧠 KLASIFIKASI GAMBAR
         # ==========================
         else:
@@ -141,26 +149,24 @@ if uploaded_file:
             img_array = np.expand_dims(image.img_to_array(img_resized), axis=0) / 255.0
             prediction = classifier.predict(img_array).flatten()
 
-            class_names = ['Kucing', 'Anjing']  # dua kelas
+            class_names = ['Kucing', 'Anjing']
             num_classes = classifier.output_shape[-1]
 
-            # 🔹 CASE 1: Model Binary (Sigmoid, 1 neuron output)
+            # Binary (Sigmoid)
             if num_classes == 1:
-                prob_animal = float(prediction[0])
-                prob_cat = 1 - prob_animal
-                prob_dog = prob_animal
+                prob_dog = float(prediction[0])
+                prob_cat = 1 - prob_dog
                 probs = [prob_cat, prob_dog]
-
-                pred_label = 'Anjing' if prob_animal >= 0.5 else 'Kucing'
+                pred_label = 'Anjing' if prob_dog >= 0.5 else 'Kucing'
                 confidence = max(probs)
 
-            # 🔹 CASE 2: Model Softmax (2 neuron output)
+            # Softmax (2 neuron)
             elif num_classes == 2:
                 probs = prediction
                 pred_label = class_names[np.argmax(probs)]
                 confidence = float(np.max(probs))
 
-            # 🔹 CASE 3: Jumlah output aneh
+            # Error handling
             else:
                 st.warning(
                     f"⚠️ Model memiliki {num_classes} output neuron, "
@@ -171,9 +177,6 @@ if uploaded_file:
                 pred_label = class_names[np.argmax(probs)]
                 confidence = float(np.max(probs))
 
-            # ==========================
-            # 📊 VISUALISASI HASIL
-            # ==========================
             with col2:
                 st.markdown(f"### 🏷️ Prediksi: **{pred_label}**")
                 st.progress(float(confidence))
@@ -182,15 +185,11 @@ if uploaded_file:
                 df = pd.DataFrame({'Kelas': class_names, 'Probabilitas': probs})
                 st.bar_chart(df.set_index('Kelas'))
 
-            # ==========================
-            # 🧾 PROMPT UNTUK INTERPRETASI
-            # ==========================
             prompt = (
                 f"Model memprediksi gambar ini sebagai {pred_label} "
                 f"dengan tingkat keyakinan {confidence:.2%}. "
                 "Jelaskan hasil ini secara sederhana."
             )
-
 
     # ==========================
     # 💬 INTERPRETASI CHATGPT
