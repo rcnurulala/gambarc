@@ -133,7 +133,7 @@ if uploaded_file:
                 "Model YOLO tidak mendeteksi objek apapun. Jelaskan kemungkinan penyebabnya secara singkat."
             )
 
-        # ==========================
+                # ==========================
         # 🧠 KLASIFIKASI GAMBAR
         # ==========================
         else:
@@ -141,33 +141,56 @@ if uploaded_file:
             img_array = np.expand_dims(image.img_to_array(img_resized), axis=0) / 255.0
             prediction = classifier.predict(img_array).flatten()
 
+            class_names = ['Kucing', 'Anjing']  # dua kelas
             num_classes = classifier.output_shape[-1]
-            class_names = ['Kucing', 'Anjing']  # hanya dua kelas
 
-            # Pengecekan keamanan jumlah kelas
-            if len(class_names) != num_classes:
+            # 🔹 CASE 1: Model Binary (Sigmoid, 1 neuron output)
+            if num_classes == 1:
+                prob_animal = float(prediction[0])
+                prob_cat = 1 - prob_animal
+                prob_dog = prob_animal
+                probs = [prob_cat, prob_dog]
+
+                pred_label = 'Anjing' if prob_animal >= 0.5 else 'Kucing'
+                confidence = max(probs)
+
+            # 🔹 CASE 2: Model Softmax (2 neuron output)
+            elif num_classes == 2:
+                probs = prediction
+                pred_label = class_names[np.argmax(probs)]
+                confidence = float(np.max(probs))
+
+            # 🔹 CASE 3: Jumlah output aneh
+            else:
                 st.warning(
-                    f"⚠️ Model memiliki {num_classes} output, tapi class_names hanya {len(class_names)}. "
-                    "Pastikan model kamu dilatih untuk 2 kelas (Kucing & Anjing)."
+                    f"⚠️ Model memiliki {num_classes} output neuron, "
+                    "pastikan hanya dua kelas: Kucing & Anjing."
                 )
                 class_names = [f"Kelas_{i+1}" for i in range(num_classes)]
+                probs = prediction
+                pred_label = class_names[np.argmax(probs)]
+                confidence = float(np.max(probs))
 
-            class_index = np.argmax(prediction)
-            confidence = np.max(prediction)
-            pred_label = class_names[class_index]
-
+            # ==========================
+            # 📊 VISUALISASI HASIL
+            # ==========================
             with col2:
                 st.markdown(f"### 🏷️ Prediksi: **{pred_label}**")
                 st.progress(float(confidence))
                 st.caption(f"Confidence: {confidence:.2%}")
 
-                df = pd.DataFrame({
-                    'Kelas': class_names,
-                    'Probabilitas': prediction
-                })
+                df = pd.DataFrame({'Kelas': class_names, 'Probabilitas': probs})
                 st.bar_chart(df.set_index('Kelas'))
 
-            prompt = f"Model memprediksi gambar ini sebagai {pred_label} dengan tingkat keyakinan {confidence:.2%}. Jelaskan hasil ini secara sederhana."
+            # ==========================
+            # 🧾 PROMPT UNTUK INTERPRETASI
+            # ==========================
+            prompt = (
+                f"Model memprediksi gambar ini sebagai {pred_label} "
+                f"dengan tingkat keyakinan {confidence:.2%}. "
+                "Jelaskan hasil ini secara sederhana."
+            )
+
 
     # ==========================
     # 💬 INTERPRETASI CHATGPT
