@@ -255,30 +255,30 @@ if uploaded_file:
 
 
 # ==========================
-# 💬 INTERPRETASI CHATGPT
+# 💬 INTERPRETASI GAMBAR
 # ==========================
 st.markdown("---")
-st.subheader("💬 Interpretasi AI Terintegrasi")
+st.subheader("💬 Interpretasi Gambar oleh AI")
 
-# Tentukan konteks prompt
+# Buat prompt berdasar hasil gambar
 if mode == "🎯 Deteksi Objek (YOLO)":
     if detected_objects:
         prompt = (
-            f"Model YOLO mendeteksi objek berikut di dalam gambar: {', '.join(detected_objects)}. "
-            "Jelaskan hasil ini secara alami, informatif, dan edukatif tanpa mengajukan pertanyaan lanjutan."
+            f"Gambar ini menampilkan {', '.join(detected_objects)}. "
+            "Jelaskan isi dan konteks visual gambar ini secara alami dan edukatif."
         )
     else:
         prompt = (
-            "Model YOLO tidak mendeteksi objek apapun. "
-            "Jelaskan kemungkinan penyebabnya secara singkat tanpa mengajukan pertanyaan lanjutan."
+            "Tidak ada objek yang terdeteksi pada gambar. "
+            "Jelaskan kemungkinan isi atau karakteristik visual gambar secara alami."
         )
 else:
     prompt = (
-        f"Model memprediksi gambar ini sebagai {pred_label} dengan tingkat keyakinan {confidence:.2%}. "
-        "Berikan penjelasan alami dan edukatif tanpa pertanyaan lanjutan."
+        f"Gambar ini diprediksi sebagai {pred_label} dengan tingkat keyakinan {confidence:.2%}. "
+        "Jelaskan isi dan ciri visual gambar ini secara alami dan edukatif."
     )
 
-# Panggil ChatGPT untuk menghasilkan interpretasi
+# Hasil interpretasi AI
 with st.spinner("🧠 Menghasilkan interpretasi..."):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -286,14 +286,13 @@ with st.spinner("🧠 Menghasilkan interpretasi..."):
             {
                 "role": "system",
                 "content": (
-                    "Kamu adalah AI yang menjelaskan hasil analisis gambar dengan cara alami, "
-                    "edukatif, dan ringkas. Hindari pertanyaan lanjutan di akhir."
+                    "Kamu adalah AI yang hanya menjelaskan isi gambar dengan cara alami, "
+                    "deskriptif, dan edukatif. Tidak memberikan saran atau pertanyaan lanjutan."
                 ),
             },
             {"role": "user", "content": prompt},
         ],
     )
 
-# Tampilkan hasil interpretasi
 interpretasi = response.choices[0].message.content
 st.markdown(f"<div class='interpret-box'>{interpretasi}</div>", unsafe_allow_html=True)
