@@ -102,9 +102,7 @@ if uploaded_file:
         st.image(img, caption="📸 Gambar Diupload", use_container_width=True)
 
     with st.spinner("🤖 Menganalisis gambar..."):
-        # ==========================
         # 🎯 DETEKSI OBJEK (YOLO)
-        # ==========================
         if mode == "🎯 Deteksi Objek (YOLO)":
             results = yolo_model(img)
             result_img = results[0].plot()
@@ -127,172 +125,68 @@ if uploaded_file:
                 else:
                     st.info("Tidak ada objek terdeteksi.")
 
-            prompt = (
-                f"Model YOLO mendeteksi objek berikut di dalam gambar: {', '.join(detected_objects)}."
-                if detected_objects else
-                "Model YOLO tidak mendeteksi objek apapun. Jelaskan kemungkinan penyebabnya secara singkat."
-            )
-
-            # ==========================
-        # 🧠 KLASIFIKASI GAMBAR (robust preprocessing)
-        # ==========================
+        # 🧠 KLASIFIKASI GAMBAR
         else:
-            # --- Ambil input shape model (fallback ke 224x224)
-            input_shape = classifier.input_shape  # biasanya (None, H, W, C) atau (None, C, H, W)
-            # Default target size
-            if input_shape is not None and len(input_shape) >= 3:
-                # Cari H & W di input_shape
-                if input_shape[1] is None or input_shape[2] is None:
-                    target_h, target_w = 224, 224
-                else:
-                    # jika channels_last: (None, H, W, C)
-                    # jika channels_first: (None, C, H, W)
-                    if len(input_shape) == 4 and input_shape[-1] in (1, 3):
-                        target_h, target_w = int(input_shape[1]), int(input_shape[2])
-                    elif len(input_shape) == 4 and input_shape[1] in (1, 3):
-                        target_h, target_w = int(input_shape[2]), int(input_shape[3])
-                    else:
-                        target_h, target_w = 224, 224
-            else:
-                target_h, target_w = 224, 224
+            img_proc = img.convert("RGB").resize((224, 224))
+            img_array = np.expand_dims(np.array(img_proc) / 255.0, axis=0)
 
-            # --- Baca & normalisasi gambar sesuai kebutuhan model
-            # Pastikan mode warna
-            # Jika model ingin 1 channel -> grayscale, else RGB
-            expected_channels = None
-            if len(input_shape) == 4:
-                # cek channels_last atau channels_first
-                if input_shape[-1] in (1, 3):
-                    expected_channels = int(input_shape[-1])  # channels_last
-                    channels_last = True
-                elif input_shape[1] in (1, 3):
-                    expected_channels = int(input_shape[1])   # channels_first
-                    channels_last = False
-            # fallback: default 3 channel RGB
-            if expected_channels is None:
-                expected_channels = 3
-                channels_last = True
+            prediction = classifier.predict(img_array)[0]
+            class_names = ['Kucing', 'Anjing']
+            pred_label = class_names[int(np.argmax(prediction))]
+            confidence = float(np.max(prediction))
 
-            # Convert mode sesuai expected_channels
-            if expected_channels == 1:
-                img_proc = img.convert("L")  # grayscale
-            else:
-                img_proc = img.convert("RGB")
+            with col2:
+                st.markdown(f"### 🏷 Prediksi: *{pred_label}*")
+                st.progress(float(confidence))
+                st.caption(f"Confidence: {confidence:.2%}")
 
-            img_resized = img_proc.resize((target_w, target_h))
-            # Konversi ke numpy array dengan dtype float32
-            img_np = np.array(img_resized).astype(np.float32) / 255.0
-
-            # Jika model expects channels_first, transpose
-            if not channels_last:
-                # img_np shape now (H, W, C) or (H, W) if grayscale
-                if img_np.ndim == 2:
-                    img_np = np.expand_dims(img_np, axis=2)  # (H, W, 1)
-                img_np = np.transpose(img_np, (2, 0, 1))  # -> (C, H, W)
-
-            # Pastikan ada batch dimension
-            if img_np.ndim == 3:
-                img_array = np.expand_dims(img_np, axis=0)  # (1, H, W, C) atau (1, C, H, W)
-            else:
-                # unexpected shape
-                img_array = img_np.reshape((1,) + img_np.shape)
-
-            # Debug kecil (tampilkan bentuk model & input untuk membantu)
-            st.write("Model input_shape:", classifier.input_shape)
-            st.write("Prepared img_array.shape:", img_array.shape, "dtype:", img_array.dtype)
-
-            # Prediksi dengan try/except untuk menangkap dan tampilkan error lebih informatif
-            try:
-                prediction_raw = classifier.predict(img_array)
-            except Exception as e:
-                st.error("Gagal melakukan prediksi. Cek model.input_shape dan img_array.shape di atas.")
-                st.error(f"Error detail: {e}")
-                # hentikan proses lanjutan
-                prediction_raw = None
-
-            if prediction_raw is not None:
-                prediction = np.asarray(prediction_raw).flatten()
-
-                class_names = ['Kucing', 'Anjing']
-                num_classes = classifier.output_shape[-1] if classifier.output_shape is not None else None
-
-                # Binary (sigmoid, 1 neuron)
-                if num_classes == 1:
-                    prob_dog = float(prediction[0])
-                    probs = [1 - prob_dog, prob_dog]
-                    pred_label = 'Anjing' if prob_dog >= 0.5 else 'Kucing'
-                    confidence = max(probs)
-
-                # Softmax (2 neuron)
-                elif num_classes == 2:
-                    probs = prediction
-                    pred_label = class_names[int(np.argmax(probs))]
-                    confidence = float(np.max(probs))
-
-                # Fallback jika bentuk output tidak sesuai
-                else:
-                    probs = prediction.tolist()
-                    # jika jumlah probs <> 2, buat label otomatis
-                    if len(probs) != 2:
-                        class_names = [f"Kelas_{i+1}" for i in range(len(probs))]
-                    pred_label = class_names[int(np.argmax(probs))]
-                    confidence = float(np.max(probs))
-
-                # Tampilkan hasil
-                with col2:
-                    st.markdown(f"### 🏷 Prediksi: *{pred_label}*")
-                    st.progress(float(confidence))
-                    st.caption(f"Confidence: {confidence:.2%}")
-
-                    df = pd.DataFrame({'Kelas': class_names, 'Probabilitas': probs})
-                    st.bar_chart(df.set_index('Kelas'))
-
-                prompt = (
-                    f"Model memprediksi gambar ini sebagai {pred_label} "
-                    f"dengan tingkat keyakinan {confidence:.2%}. "
-                    "Jelaskan hasil ini secara sederhana."
-                )
-
+                df = pd.DataFrame({'Kelas': class_names, 'Probabilitas': prediction})
+                st.bar_chart(df.set_index('Kelas'))
 
 # ==========================
 # 💬 INTERPRETASI GAMBAR
 # ==========================
-st.markdown("---")
-st.subheader("💬 Interpretasi Gambar oleh AI")
+    st.markdown("---")
+    st.subheader("💬 Interpretasi Gambar oleh AI")
 
-# Buat prompt berdasar hasil gambar
-if mode == "🎯 Deteksi Objek (YOLO)":
-    if detected_objects:
-        prompt = (
-            f"Gambar ini menampilkan {', '.join(detected_objects)}. "
-            "Jelaskan isi dan konteks visual gambar ini secara alami dan edukatif."
-        )
+    # Buat prompt berdasar hasil
+    if mode == "🎯 Deteksi Objek (YOLO)":
+        if detected_objects:
+            prompt = (
+                f"Gambar ini menampilkan {', '.join(detected_objects)}. "
+                "Jelaskan isi dan konteks visual gambar ini secara alami dan edukatif, tanpa memberikan saran atau pertanyaan."
+            )
+        else:
+            prompt = (
+                "Tidak ada objek yang terdeteksi pada gambar. "
+                "Jelaskan kemungkinan isi visual gambar ini secara alami dan edukatif tanpa saran atau pertanyaan."
+            )
     else:
         prompt = (
-            "Tidak ada objek yang terdeteksi pada gambar. "
-            "Jelaskan kemungkinan isi atau karakteristik visual gambar secara alami."
+            f"Gambar ini diprediksi sebagai {pred_label} dengan tingkat keyakinan {confidence:.2%}. "
+            "Jelaskan isi dan ciri visual gambar ini secara alami dan edukatif tanpa saran atau pertanyaan."
         )
+
+    # Hasil interpretasi AI
+    with st.spinner("🧠 Menghasilkan interpretasi..."):
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Kamu adalah AI yang hanya menjelaskan isi gambar secara deskriptif dan edukatif. "
+                        "Tidak boleh memberikan saran, opini, atau pertanyaan lanjutan di luar isi gambar."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+        )
+
+    interpretasi = response.choices[0].message.content
+    st.markdown(f"<div class='interpret-box'>{interpretasi}</div>", unsafe_allow_html=True)
+
 else:
-    prompt = (
-        f"Gambar ini diprediksi sebagai {pred_label} dengan tingkat keyakinan {confidence:.2%}. "
-        "Jelaskan isi dan ciri visual gambar ini secara alami dan edukatif."
-    )
-
-# Hasil interpretasi AI
-with st.spinner("🧠 Menghasilkan interpretasi..."):
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "Kamu adalah AI yang hanya menjelaskan isi gambar dengan cara alami, "
-                    "deskriptif, dan edukatif. Tidak memberikan saran atau pertanyaan lanjutan."
-                ),
-            },
-            {"role": "user", "content": prompt},
-        ],
-    )
-
-interpretasi = response.choices[0].message.content
-st.markdown(f"<div class='interpret-box'>{interpretasi}</div>", unsafe_allow_html=True)
+    st.markdown("### 📥 Silakan unggah gambar di sidebar untuk memulai analisis.")
+    st.image("https://cdn-icons-png.flaticon.com/512/4792/4792929.png", width=300)
+    st.markdown("<p class='caption'>Belum ada gambar yang diunggah</p>", unsafe_allow_html=True)
