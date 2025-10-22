@@ -255,21 +255,56 @@ if uploaded_file:
 
 
     # ==========================
-    # 💬 INTERPRETASI CHATGPT
-    # ==========================
-    st.markdown("---")
-    st.subheader("💬 Interpretasi AI Terintegrasi")
-    with st.spinner("🧠 Menghasilkan interpretasi..."):
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Kamu adalah AI yang menjelaskan hasil analisis gambar dengan cara alami dan edukatif."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-    st.markdown(f"<div class='interpret-box'>{response.choices[0].message.content}</div>", unsafe_allow_html=True)
+# 💬 INTERPRETASI CHATGPT
+# ==========================
+st.markdown("---")
+st.subheader("💬 Interpretasi AI Terintegrasi")
 
+if "detected_objects" in locals() and detected_objects:
+    hewan_utama = detected_objects[0].split(" ")[0].lower()
+elif "pred_label" in locals():
+    hewan_utama = pred_label.lower()
 else:
-    st.markdown("### 📥 Silakan unggah gambar di sidebar untuk memulai analisis.")
-    st.image("https://cdn-icons-png.flaticon.com/512/4792/4792929.png", width=300)
-    st.markdown("<p class='caption'>Belum ada gambar yang diunggah</p>", unsafe_allow_html=True)
+    hewan_utama = None
+
+# Siapkan fakta hewan (bisa diperluas)
+fakta_hewan = {
+    "kucing": [
+        "Kucing bisa tidur hingga 16 jam sehari untuk menghemat energi.",
+        "Setiap kucing punya pola garis pada hidung yang unik, mirip sidik jari manusia."
+    ],
+    "anjing": [
+        "Anjing punya kemampuan penciuman yang bisa 10.000 kali lebih tajam dari manusia.",
+        "Anjing bisa memahami hingga 250 kata dan gerakan tangan."
+    ],
+    "burung": [
+        "Beberapa burung bisa menirukan suara manusia dan bahkan melodi lagu.",
+        "Burung menggunakan medan magnet bumi untuk bernavigasi saat migrasi."
+    ]
+}
+
+# Ambil fakta terkait hewan yang terdeteksi
+fakta_tambahan = fakta_hewan.get(hewan_utama, ["Hewan ini memiliki keunikan tersendiri di alam."])
+
+# Buat prompt untuk interpretasi AI
+prompt = (
+    f"Hasil analisis gambar menunjukkan {hewan_utama if hewan_utama else 'objek tertentu'}. "
+    "Berikan interpretasi singkat yang alami dan edukatif tentang hasil ini."
+)
+
+with st.spinner("🧠 Menghasilkan interpretasi..."):
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "Kamu adalah AI yang menjelaskan hasil analisis gambar secara alami, edukatif, dan ramah. Hindari mengajukan pertanyaan lanjutan."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+# Tampilkan hasil interpretasi dan fakta tambahan
+interpretasi = response.choices[0].message.content
+
+st.markdown(f"<div class='interpret-box'>{interpretasi}</div>", unsafe_allow_html=True)
+st.markdown("#### 🐾 Fakta Menarik:")
+for fakta in fakta_tambahan:
+    st.markdown(f"- {fakta}")
