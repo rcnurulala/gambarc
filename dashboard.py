@@ -11,8 +11,8 @@ from openai import OpenAI
 # PAGE CONFIG
 # ==========================
 st.set_page_config(
-    page_title="AI Vision Studio",
-    page_icon="🪶",
+    page_title="Furient",
+    page_icon="😺🐶",
     layout="wide",
     initial_sidebar_state="expanded"
 )
