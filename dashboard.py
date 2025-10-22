@@ -1,6 +1,3 @@
-Berikut hasil **salinan ulang sama persis** dari kode yang kamu kirim:
-
-```python
 import streamlit as st
 from ultralytics import YOLO
 import tensorflow as tf
@@ -276,4 +273,3 @@ else:
     st.markdown("### 📥 Silakan unggah gambar di sidebar untuk memulai analisis.")
     st.image("https://cdn-icons-png.flaticon.com/512/4792/4792929.png", width=300)
     st.markdown("<p class='caption'>Belum ada gambar yang diunggah</p>", unsafe_allow_html=True)
-```
