@@ -5,3 +5,4 @@ opencv-python-headless
 Pillow
 numpy
 openai>=1.0.0
+opencv-python-headless
