@@ -254,57 +254,46 @@ if uploaded_file:
                 )
 
 
-    # ==========================
+# ==========================
 # 💬 INTERPRETASI CHATGPT
 # ==========================
 st.markdown("---")
 st.subheader("💬 Interpretasi AI Terintegrasi")
 
-if "detected_objects" in locals() and detected_objects:
-    hewan_utama = detected_objects[0].split(" ")[0].lower()
-elif "pred_label" in locals():
-    hewan_utama = pred_label.lower()
+# Tentukan konteks prompt
+if mode == "🎯 Deteksi Objek (YOLO)":
+    if detected_objects:
+        prompt = (
+            f"Model YOLO mendeteksi objek berikut di dalam gambar: {', '.join(detected_objects)}. "
+            "Jelaskan hasil ini secara alami, informatif, dan edukatif tanpa mengajukan pertanyaan lanjutan."
+        )
+    else:
+        prompt = (
+            "Model YOLO tidak mendeteksi objek apapun. "
+            "Jelaskan kemungkinan penyebabnya secara singkat tanpa mengajukan pertanyaan lanjutan."
+        )
 else:
-    hewan_utama = None
+    prompt = (
+        f"Model memprediksi gambar ini sebagai {pred_label} dengan tingkat keyakinan {confidence:.2%}. "
+        "Berikan penjelasan alami dan edukatif tanpa pertanyaan lanjutan."
+    )
 
-# Siapkan fakta hewan (bisa diperluas)
-fakta_hewan = {
-    "kucing": [
-        "Kucing bisa tidur hingga 16 jam sehari untuk menghemat energi.",
-        "Setiap kucing punya pola garis pada hidung yang unik, mirip sidik jari manusia."
-    ],
-    "anjing": [
-        "Anjing punya kemampuan penciuman yang bisa 10.000 kali lebih tajam dari manusia.",
-        "Anjing bisa memahami hingga 250 kata dan gerakan tangan."
-    ],
-    "burung": [
-        "Beberapa burung bisa menirukan suara manusia dan bahkan melodi lagu.",
-        "Burung menggunakan medan magnet bumi untuk bernavigasi saat migrasi."
-    ]
-}
-
-# Ambil fakta terkait hewan yang terdeteksi
-fakta_tambahan = fakta_hewan.get(hewan_utama, ["Hewan ini memiliki keunikan tersendiri di alam."])
-
-# Buat prompt untuk interpretasi AI
-prompt = (
-    f"Hasil analisis gambar menunjukkan {hewan_utama if hewan_utama else 'objek tertentu'}. "
-    "Berikan interpretasi singkat yang alami dan edukatif tentang hasil ini."
-)
-
+# Panggil ChatGPT untuk menghasilkan interpretasi
 with st.spinner("🧠 Menghasilkan interpretasi..."):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "Kamu adalah AI yang menjelaskan hasil analisis gambar secara alami, edukatif, dan ramah. Hindari mengajukan pertanyaan lanjutan."},
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "system",
+                "content": (
+                    "Kamu adalah AI yang menjelaskan hasil analisis gambar dengan cara alami, "
+                    "edukatif, dan ringkas. Hindari pertanyaan lanjutan di akhir."
+                ),
+            },
+            {"role": "user", "content": prompt},
+        ],
     )
 
-# Tampilkan hasil interpretasi dan fakta tambahan
+# Tampilkan hasil interpretasi
 interpretasi = response.choices[0].message.content
-
 st.markdown(f"<div class='interpret-box'>{interpretasi}</div>", unsafe_allow_html=True)
-st.markdown("#### 🐾 Fakta Menarik:")
-for fakta in fakta_tambahan:
-    st.markdown(f"- {fakta}")
