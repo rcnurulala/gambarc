@@ -125,14 +125,6 @@ mode = st.sidebar.radio("", ["🎯 Deteksi Objek (YOLO)", "🧠 Klasifikasi Gamb
 uploaded_file = st.sidebar.file_uploader("📤 Unggah Gambar", type=["jpg", "jpeg", "png"])
 st.sidebar.markdown("---")
 
-st.sidebar.markdown("""
-<div class='note-box'>
-<h4>💡 Pilih mode analisis</h4>
-<p>Lalu unggah gambar untuk mulai~</p>
-<div style='font-size:60px; margin-top:10px;'>🐾</div>
-</div>
-""", unsafe_allow_html=True)
-
 # ==========================
 # PIPELINE
 # ==========================
@@ -275,7 +267,6 @@ if uploaded_file:
     st.markdown(f"<div class='interpret-box'>{response.choices[0].message.content}</div>", unsafe_allow_html=True)
 
 else:
-    st.markdown("### 📥 Silakan unggah gambar di sidebar untuk memulai analisis.")
     st.markdown("""
     <div style='
         background-color:#fffbea;
