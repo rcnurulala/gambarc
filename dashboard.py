@@ -59,25 +59,37 @@ h1, h2, h3 { color: #4C1D95; font-weight: 700; }
 
 /* Highlight Sidebar Title */
 .sidebar-title {
-    font-size: 1.3rem;
-    font-weight: 800;
+    font-size: 1.6rem;
+    font-weight: 900;
     color: #4C1D95;
     text-align: center;
     background-color: rgba(255,255,255,0.6);
-    border-radius: 10px;
-    padding: 8px 10px;
+    border-radius: 12px;
+    padding: 10px 12px;
     margin-bottom: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    letter-spacing: 0.5px;
 }
 
-/* Note Style */
+/* Note Style 🐾 */
 .note-box {
-    background-color: #fff8e1;
-    padding: 14px 18px;
-    border-left: 6px solid #ffb300;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin-top: 20px;
+    background-color: #fffbea;
+    padding: 18px 22px;
+    border: 2px dashed #ffb300;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-top: 25px;
+    text-align: center;
+}
+.note-box h4 {
+    margin: 0;
+    color: #5b21b6;
+    font-weight: 700;
+}
+.note-box p {
+    color: #444;
+    font-size: 16px;
+    margin: 5px 0 0 0;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -101,7 +113,7 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY_GAMBARC"])
 # ==========================
 # HEADER
 # ==========================
-st.markdown("<h1 style='text-align:center;'>😺🐶Furient</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center;'>😺🐶 Furient</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align:center; color:#6B21A8;'>Deteksi dan Klasifikasi untuk Dunia Feline & Canine dengan Sentuhan AI</p>", unsafe_allow_html=True)
 st.markdown("---")
 
@@ -112,9 +124,12 @@ st.sidebar.markdown("<div class='sidebar-title'>⚙️ Mode Analisis</div>", uns
 mode = st.sidebar.radio("", ["🎯 Deteksi Objek (YOLO)", "🧠 Klasifikasi Gambar"])
 uploaded_file = st.sidebar.file_uploader("📤 Unggah Gambar", type=["jpg", "jpeg", "png"])
 st.sidebar.markdown("---")
+
 st.sidebar.markdown("""
 <div class='note-box'>
-💡 <b>Pilih mode analisis</b>, lalu <i>unggah gambar</i> untuk mulai.
+<h4>💡 Pilih mode analisis</h4>
+<p>Lalu unggah gambar untuk mulai~</p>
+<div style='font-size:60px; margin-top:10px;'>🐾</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -261,4 +276,18 @@ if uploaded_file:
 
 else:
     st.markdown("### 📥 Silakan unggah gambar di sidebar untuk memulai analisis.")
-    st.image("https://cdn-icons-png.flaticon.com/512/4792/4792929.png", width=300)
+    st.markdown("""
+    <div style='
+        background-color:#fffbea;
+        border:2px dashed #ffd166;
+        border-radius:20px;
+        padding:30px;
+        text-align:center;
+        box-shadow:0 4px 8px rgba(0,0,0,0.1);
+        font-family: "Poppins", sans-serif;
+    '>
+        <h2 style='color:#6d6875;'>💡 Pilih mode analisis</h2>
+        <p style='font-size:18px; color:#444;'>Lalu unggah gambar untuk mulai~</p>
+        <div style='font-size:80px;'>🐾</div>
+    </div>
+    """, unsafe_allow_html=True)
