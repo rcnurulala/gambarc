@@ -56,6 +56,29 @@ h1, h2, h3 { color: #4C1D95; font-weight: 700; }
     padding: 1rem; border-radius: 10px; margin-top: 1rem;
 }
 .caption { color: #6B7280; font-size: 0.9rem; text-align: center; }
+
+/* Highlight Sidebar Title */
+.sidebar-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #4C1D95;
+    text-align: center;
+    background-color: rgba(255,255,255,0.6);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Note Style */
+.note-box {
+    background-color: #fff8e1;
+    padding: 14px 18px;
+    border-left: 6px solid #ffb300;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-top: 20px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -85,11 +108,15 @@ st.markdown("---")
 # ==========================
 # SIDEBAR
 # ==========================
-st.sidebar.header("⚙️ Mode Analisis")
+st.sidebar.markdown("<div class='sidebar-title'>⚙️ Mode Analisis</div>", unsafe_allow_html=True)
 mode = st.sidebar.radio("", ["🎯 Deteksi Objek (YOLO)", "🧠 Klasifikasi Gambar"])
 uploaded_file = st.sidebar.file_uploader("📤 Unggah Gambar", type=["jpg", "jpeg", "png"])
 st.sidebar.markdown("---")
-st.sidebar.caption("💡 Pilih mode analisis, lalu unggah gambar untuk mulai.")
+st.sidebar.markdown("""
+<div class='note-box'>
+💡 <b>Pilih mode analisis</b>, lalu <i>unggah gambar</i> untuk mulai.
+</div>
+""", unsafe_allow_html=True)
 
 # ==========================
 # PIPELINE
@@ -102,9 +129,6 @@ if uploaded_file:
         st.image(img, caption="📸 Gambar Diupload", use_container_width=True)
 
     with st.spinner("🤖 Menganalisis gambar..."):
-        # ==========================
-        # 🎯 DETEKSI OBJEK (YOLO)
-        # ==========================
         if mode == "🎯 Deteksi Objek (YOLO)":
             results = yolo_model(img)
             result_img = results[0].plot()
@@ -133,9 +157,6 @@ if uploaded_file:
                 "Model YOLO tidak mendeteksi objek apapun. Jelaskan kemungkinan penyebabnya secara singkat."
             )
 
-        # ==========================
-        # 🧠 KLASIFIKASI GAMBAR (robust preprocessing)
-        # ==========================
         else:
             input_shape = classifier.input_shape
             if input_shape is not None and len(input_shape) >= 3:
@@ -181,9 +202,6 @@ if uploaded_file:
             else:
                 img_array = img_np.reshape((1,) + img_np.shape)
 
-            st.write("Model input_shape:", classifier.input_shape)
-            st.write("Prepared img_array.shape:", img_array.shape, "dtype:", img_array.dtype)
-
             try:
                 prediction_raw = classifier.predict(img_array)
             except Exception as e:
@@ -193,7 +211,6 @@ if uploaded_file:
 
             if prediction_raw is not None:
                 prediction = np.asarray(prediction_raw).flatten()
-
                 class_names = ['Kucing', 'Anjing']
                 num_classes = classifier.output_shape[-1] if classifier.output_shape is not None else None
 
@@ -245,4 +262,3 @@ if uploaded_file:
 else:
     st.markdown("### 📥 Silakan unggah gambar di sidebar untuk memulai analisis.")
     st.image("https://cdn-icons-png.flaticon.com/512/4792/4792929.png", width=300)
-    st.markdown("<p class='caption'>Belum ada gambar yang diunggah</p>", unsafe_allow_html=True)
