@@ -78,8 +78,8 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY_GAMBARC"])
 # ==========================
 # HEADER
 # ==========================
-st.markdown("<h1 style='text-align:center;'>🪶 AI Vision Studio</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; color:#6B21A8;'>Klasifikasi & Deteksi Objek dengan Sentuhan AI</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center;'>😺🐶Furient</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:#6B21A8;'>Deteksi dan Klasifikasi untuk Dunia Feline & Canine dengan Sentuhan AI</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 # ==========================
