@@ -72,24 +72,29 @@ h1, h2, h3 { color: #4C1D95; font-weight: 700; }
 }
 
 /* Note Style 🐾 */
-.note-box {
-    background-color: #fffbea;
-    padding: 18px 22px;
-    border: 2px dashed #ffb300;
-    border-radius: 14px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-top: 25px;
+.note-center {
+    background-color: #FFF8E1;
+    border: 3px dashed #FBBF24;
+    border-radius: 25px;
+    padding: 70px 40px;
     text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    font-family: "Poppins", sans-serif;
+    margin-top: 60px;
 }
-.note-box h4 {
-    margin: 0;
-    color: #5b21b6;
-    font-weight: 700;
+.note-center h1 {
+    color: #4C1D95;
+    font-weight: 800;
+    margin-bottom: 15px;
 }
-.note-box p {
-    color: #444;
-    font-size: 16px;
-    margin: 5px 0 0 0;
+.note-center p {
+    font-size: 1.2rem;
+    color: #6B21A8;
+    margin-bottom: 30px;
+}
+.note-center div {
+    font-size: 3rem;
+    color: #7C3AED;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -274,20 +279,14 @@ if uploaded_file:
         )
     st.markdown(f"<div class='interpret-box'>{response.choices[0].message.content}</div>", unsafe_allow_html=True)
 
+# ==========================
+# HALAMAN UTAMA SAAT BELUM UPLOAD GAMBAR
+# ==========================
 else:
-    st.markdown("### 📥 Silakan unggah gambar di sidebar untuk memulai analisis.")
     st.markdown("""
-    <div style='
-        background-color:#fffbea;
-        border:2px dashed #ffd166;
-        border-radius:20px;
-        padding:30px;
-        text-align:center;
-        box-shadow:0 4px 8px rgba(0,0,0,0.1);
-        font-family: "Poppins", sans-serif;
-    '>
-        <h2 style='color:#6d6875;'>💡 Pilih mode analisis</h2>
-        <p style='font-size:18px; color:#444;'>Lalu unggah gambar untuk mulai~</p>
-        <div style='font-size:80px;'>🐾</div>
-    </div>
+        <div class='note-center'>
+            <h1>💡 Pilih mode analisis</h1>
+            <p>Lalu unggah gambar kucing 🐱 atau anjing 🐶 untuk mulai~</p>
+            <div>🐾</div>
+        </div>
     """, unsafe_allow_html=True)
